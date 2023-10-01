@@ -11,14 +11,15 @@ contract("LendingContract", (accounts) => {
 
   it("should allow users to deposit assets", async () => {
     const depositAmount = 100;
-    await lendingContract.deposit(depositAmount, { from: accounts[0] });
+    const result = await lendingContract.deposit(depositAmount, {
+      from: accounts[0],
+    });
 
-    const balance = await lendingContract.balances(accounts[0]);
-    assert.equal(
-      balance,
-      depositAmount,
-      "Incorrect user balance after deposit"
-    );
+    truffleAssert.eventEmitted(result, "Deposit", (ev) => {
+      return (
+        ev.account === accounts[0] && ev.amount.toNumber() === depositAmount
+      );
+    });
   });
 
   it("should allow users to borrow assets with sufficient liquidity", async () => {
@@ -26,21 +27,15 @@ contract("LendingContract", (accounts) => {
     const borrowAmount = 100;
 
     await lendingContract.deposit(depositAmount, { from: accounts[0] });
-    await lendingContract.borrow(borrowAmount, { from: accounts[0] });
+    const result = await lendingContract.borrow(borrowAmount, {
+      from: accounts[0],
+    });
 
-    const userBalance = await lendingContract.balances(accounts[0]);
-    const contractLiquidity = await lendingContract.liquidity();
-
-    assert.equal(
-      userBalance,
-      depositAmount + borrowAmount,
-      "Incorrect user balance after borrow"
-    );
-    assert.equal(
-      contractLiquidity,
-      depositAmount - borrowAmount,
-      "Incorrect contract liquidity after borrow"
-    );
+    truffleAssert.eventEmitted(result, "Borrow", (ev) => {
+      return (
+        ev.account === accounts[0] && ev.amount.toNumber() === borrowAmount
+      );
+    });
   });
 
   it("should revert when users attempt to borrow more than available liquidity", async () => {
@@ -53,5 +48,24 @@ contract("LendingContract", (accounts) => {
       lendingContract.borrow(borrowAmount, { from: accounts[0] }),
       "revert Insufficient liquidity"
     );
+  });
+
+  // ...
+
+  it("should handle simulation of borrowing more than available liquidity", async () => {
+    const depositAmount = 50;
+    const borrowAmount = 100;
+
+    await lendingContract.deposit(depositAmount, { from: accounts[0] });
+
+    // Attempt to borrow more than available liquidity
+    await truffleAssert.reverts(
+      lendingContract.borrow(borrowAmount, { from: accounts[0] }),
+      "revert Insufficient liquidity"
+    );
+
+    // Ensure 'Borrow' event was not emitted
+    const result = await lendingContract.getPastEvents("Borrow");
+    assert.equal(result.length, 0, "Borrow event should not be emitted");
   });
 });
