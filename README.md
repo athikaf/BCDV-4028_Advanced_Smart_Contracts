@@ -52,5 +52,14 @@
 <b>Step 6:</b> Calling the updateState function on the Caller Contract and checking the address of the receiver contract which has been updated because of the delegate call.
 <img width="1440" alt="Screenshot 2023-09-25 at 12 10 15 AM" src="https://github.com/athikaf/BCDV-4028_Advanced_Smart_Contracts/assets/69520002/a2a0da4f-0b66-46d9-8d84-93c286793050">
 
+<hr>
+<h2>LAB 3: Lending Contract, Unit Tests and Simulation Test</h2>
+
+<b>Image 1:</b> All three unit tests passed.
+<img width="1440" alt="Screenshot 2023-09-30 at 10 29 29 PM" src="https://github.com/athikaf/BCDV-4028_Advanced_Smart_Contracts/assets/69520002/9e79954e-a48a-42c3-b21c-31b0c0e0b569">
+
+<b>Image 2:</b> Simulation test passed.
+<img width="1440" alt="Screenshot 2023-09-30 at 10 43 41 PM" src="https://github.com/athikaf/BCDV-4028_Advanced_Smart_Contracts/assets/69520002/3d1336ea-1f02-4b39-a69d-b6524d752e0e">
+
 
 
