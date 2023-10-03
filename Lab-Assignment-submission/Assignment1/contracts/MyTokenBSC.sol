@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MyTokenBSC is ERC20 {
-    constructor() ERC20("MyTokenBSC", "BSC") {
+    constructor() ERC20("MyTokenBSC", "MTB") {
         _mint(msg.sender, 1000000 * 10**decimals());
     }
 }
