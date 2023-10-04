@@ -15,8 +15,11 @@
     "@openzeppelin/contracts": "^4.9.3",
     "@truffle/hdwallet-provider": "^2.1.15",
     "@trufflesuite/uws-js-unofficial": "^20.30.0-unofficial.0",
+    "chai": "^4.3.10",
     "dotenv": "^16.3.1",
+    "ethers": "^6.7.1",
     "uws": "^200.0.0",
+    "web3": "^4.1.2",
     "ws": "^8.14.2",
     "wscat": "^5.2.0"
   }

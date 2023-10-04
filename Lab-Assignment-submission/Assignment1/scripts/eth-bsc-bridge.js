@@ -4,9 +4,7 @@ const BridgeBsc = require("../build/contracts/BridgeBsc.json");
 const dotenv = require("dotenv");
 dotenv.config();
 
-const web3Eth = new Web3(
-  "wss://sepolia.infura.io/ws/v3/52bc3a35e8244537bc4848e8d20bb882"
-);
+const web3Eth = new Web3("HTTP://127.0.0.1:7545");
 const web3Bsc = new Web3("https://data-seed-prebsc-1-s1.binance.org:8545");
 const adminPrivKey = process.env.ADMIN_PVT_KEY;
 const { address: admin } = web3Bsc.eth.accounts.wallet.add(adminPrivKey);

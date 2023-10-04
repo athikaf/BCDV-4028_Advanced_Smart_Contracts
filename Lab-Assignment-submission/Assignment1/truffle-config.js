@@ -65,11 +65,11 @@ module.exports = {
       provider: () =>
         new HDWalletProvider(
           process.env.MNEMONIC_METAMASK,
-          "wss://sepolia.infura.io/ws/v3/52bc3a35e8244537bc4848e8d20bb882",
+          "HTTP://127.0.0.1:7545",
           0,
           1
         ),
-      network_id: 1, //rinkeby
+      network_id: 5777, //rinkeby
       skipDryRun: true,
     },
     bscTestnet: {
