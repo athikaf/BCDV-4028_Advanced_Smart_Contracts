@@ -1,91 +1,86 @@
-const { expect } = require("chai");
-const Web3 = require("web3");
-const { ethers } = require("hardhat");
+// BridgeBsc.test.js
+const BridgeBsc = artifacts.require("BridgeBsc");
+const TokenBsc = artifacts.require("TokenBsc");
+const { expectRevert } = require("@openzeppelin/test-helpers");
 
-const BridgeEth = artifacts.require("BridgeEth");
-const TokenEth = artifacts.require("TokenEth");
-
-require("dotenv").config(); // Load environment variables
-
-contract("BridgeEth", (accounts) => {
-  let bridgeEth;
-  let tokenEth;
+contract("BridgeBsc", (accounts) => {
+  let bridgeInstance;
+  let tokenInstance;
 
   const admin = accounts[0];
   const user = accounts[1];
 
-  const privateKey = process.env.ADMIN_PVT_KEY; // Make sure this is set in your .env file
-
   beforeEach(async () => {
-    tokenEth = await TokenEth.new();
-    bridgeEth = await BridgeEth.new(tokenEth.address);
+    // Deploy TokenBsc
+    tokenInstance = await TokenBsc.new();
+
+    // Deploy BridgeBsc with the deployed TokenBsc address
+    bridgeInstance = await BridgeBsc.new(tokenInstance.address);
+
+    // Mint some tokens to the admin for testing
+    await tokenInstance.mint(admin, web3.utils.toWei("1000", "ether"));
   });
 
   it("should allow burning tokens", async () => {
-    const amount = 100;
-    await tokenEth.mint(user, amount);
+    const initialBalance = await tokenInstance.balanceOf(user);
 
-    const balanceBefore = await tokenEth.balanceOf(user);
-
-    // Initialize web3 here
-    const web3 = new Web3(web3.currentProvider); // Assuming you have web3 available
-
-    // Use web3 to sign the transaction
-    const tx = await bridgeEth.burn(admin, amount, { from: user });
-    const receipt = await web3.eth.getTransactionReceipt(tx.tx);
-
-    const balanceAfter = await tokenEth.balanceOf(user);
-
-    expect(balanceAfter.toNumber()).to.equal(balanceBefore.toNumber() - amount);
-  });
-
-  it("should emit Transfer event when burning tokens", async () => {
-    const amount = 100;
-
-    // Sign the transaction using ethers and the admin's private key
-    const { chainId } = await ethers.provider.getNetwork();
-    const adminSigner = new ethers.Wallet(privateKey, ethers.provider);
-    const bridgeEthWithSigner = new ethers.Contract(
-      bridgeEth.address,
-      BridgeEth.abi,
-      adminSigner
+    // Approve the BridgeBsc to spend tokens on behalf of the user
+    await tokenInstance.approve(
+      bridgeInstance.address,
+      web3.utils.toWei("10", "ether"),
+      { from: user }
     );
 
-    const result = await bridgeEthWithSigner.burn(admin, amount, {
+    // Burn tokens through the bridge
+    await bridgeInstance.burn(user, web3.utils.toWei("10", "ether"), {
       from: user,
     });
 
-    expect(result.logs.length).to.equal(1);
-    const log = result.logs[0];
-    expect(log.event).to.equal("Transfer");
-    expect(log.args.from).to.equal(user);
-    expect(log.args.to).to.equal(admin);
-    expect(log.args.amount.toNumber()).to.equal(amount);
-    expect(log.args.step).to.equal(0); // 0 corresponds to Step.Burn
+    const finalBalance = await tokenInstance.balanceOf(user);
+
+    assert.equal(
+      finalBalance.toString(),
+      initialBalance.sub(web3.utils.toWei("10", "ether")).toString(),
+      "Invalid final balance"
+    );
   });
 
-  it("should emit Transfer event when minting tokens", async () => {
-    const amount = 100;
+  it("should allow minting tokens by admin", async () => {
+    const initialBalance = await tokenInstance.balanceOf(user);
 
-    // Sign the transaction using ethers and the admin's private key
-    const { chainId } = await ethers.provider.getNetwork();
-    const adminSigner = new ethers.Wallet(privateKey, ethers.provider);
-    const bridgeEthWithSigner = new ethers.Contract(
-      bridgeEth.address,
-      BridgeEth.abi,
-      adminSigner
-    );
-
-    const result = await bridgeEthWithSigner.mint(user, amount, 1, {
+    // Mint tokens through the bridge (admin only)
+    await bridgeInstance.mint(user, web3.utils.toWei("10", "ether"), 1, {
       from: admin,
     });
 
-    expect(result.logs.length).to.equal(1);
-    const log = result.logs[0];
-    expect(log.event).to.equal("Transfer");
-    expect(log.args.from).to.equal(admin);
-    expect(log.args.to).to.equal(user);
-    expect(log.args.amount.toNumber()).to.equal(amount);
-    expect(log.args.step).to.equal(1); // 1 corresponds to Step.Mint
+    const finalBalance = await tokenInstance.balanceOf(user);
+
+    assert.equal(
+      finalBalance.toString(),
+      initialBalance.add(web3.utils.toWei("10", "ether")).toString(),
+      "Invalid final balance"
+    );
+  });
+
+  it("should not allow minting tokens by non-admin", async () => {
+    // Attempt to mint tokens through the bridge by a non-admin
+    await expectRevert(
+      bridgeInstance.mint(user, web3.utils.toWei("10", "ether"), 1, {
+        from: user,
+      }),
+      "only admin"
+    );
+  });
+
+  it("should not allow minting tokens by another admin", async () => {
+    const anotherAdmin = accounts[2];
+
+    // Attempt to mint tokens through the bridge by another admin
+    await expectRevert(
+      bridgeInstance.mint(user, web3.utils.toWei("10", "ether"), 1, {
+        from: anotherAdmin,
+      }),
+      "only admin"
+    );
   });
 });
