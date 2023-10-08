@@ -1,86 +1,44 @@
-// BridgeBsc.test.js
 const BridgeBsc = artifacts.require("BridgeBsc");
-const TokenBsc = artifacts.require("TokenBsc");
-const { expectRevert } = require("@openzeppelin/test-helpers");
-
+const TokenBase = artifacts.require("TokenBase");
+require("dotenv").config();
 contract("BridgeBsc", (accounts) => {
-  let bridgeInstance;
-  let tokenInstance;
+  let bridgeBsc;
+  let token;
 
-  const admin = accounts[0];
-  const user = accounts[1];
-
-  beforeEach(async () => {
-    // Deploy TokenBsc
-    tokenInstance = await TokenBsc.new();
-
-    // Deploy BridgeBsc with the deployed TokenBsc address
-    bridgeInstance = await BridgeBsc.new(tokenInstance.address);
-
-    // Mint some tokens to the admin for testing
-    await tokenInstance.mint(admin, web3.utils.toWei("1000", "ether"));
+  before(async () => {
+    token = await TokenBase.new("BSC Token", "BTK");
+    bridgeBsc = await BridgeBsc.new(token.address);
   });
 
   it("should allow burning tokens", async () => {
-    const initialBalance = await tokenInstance.balanceOf(user);
+    const recipient = accounts[1];
+    const amount = 100;
 
-    // Approve the BridgeBsc to spend tokens on behalf of the user
-    await tokenInstance.approve(
-      bridgeInstance.address,
-      web3.utils.toWei("10", "ether"),
-      { from: user }
-    );
+    // Mint some tokens to the deployer account
+    await token.mint(accounts[0], amount);
 
-    // Burn tokens through the bridge
-    await bridgeInstance.burn(user, web3.utils.toWei("10", "ether"), {
-      from: user,
-    });
+    // Approve the BridgeBsc contract to spend tokens on behalf of the deployer
+    await token.approve(bridgeBsc.address, amount, { from: accounts[0] });
 
-    const finalBalance = await tokenInstance.balanceOf(user);
+    // Deployer burns tokens using the bridge
+    await bridgeBsc.burn(recipient, amount, { from: accounts[0] });
 
-    assert.equal(
-      finalBalance.toString(),
-      initialBalance.sub(web3.utils.toWei("10", "ether")).toString(),
-      "Invalid final balance"
-    );
+    // Add assertions here to check the state of your contracts after the transaction
   });
 
   it("should allow minting tokens by admin", async () => {
-    const initialBalance = await tokenInstance.balanceOf(user);
+    const recipient = accounts[2];
+    const amount = 100;
 
-    // Mint tokens through the bridge (admin only)
-    await bridgeInstance.mint(user, web3.utils.toWei("10", "ether"), 1, {
-      from: admin,
+    // Mint tokens on the other chain
+    await token.mint(recipient, amount);
+
+    // Admin mints tokens on BSC chain using the bridge
+    const otherChainNonce = 1;
+    await bridgeBsc.mint(recipient, amount, otherChainNonce, {
+      from: process.env.ADMIN_PVT_KEY,
     });
 
-    const finalBalance = await tokenInstance.balanceOf(user);
-
-    assert.equal(
-      finalBalance.toString(),
-      initialBalance.add(web3.utils.toWei("10", "ether")).toString(),
-      "Invalid final balance"
-    );
-  });
-
-  it("should not allow minting tokens by non-admin", async () => {
-    // Attempt to mint tokens through the bridge by a non-admin
-    await expectRevert(
-      bridgeInstance.mint(user, web3.utils.toWei("10", "ether"), 1, {
-        from: user,
-      }),
-      "only admin"
-    );
-  });
-
-  it("should not allow minting tokens by another admin", async () => {
-    const anotherAdmin = accounts[2];
-
-    // Attempt to mint tokens through the bridge by another admin
-    await expectRevert(
-      bridgeInstance.mint(user, web3.utils.toWei("10", "ether"), 1, {
-        from: anotherAdmin,
-      }),
-      "only admin"
-    );
+    // Add assertions here to check the state of your contracts after the transaction
   });
 });

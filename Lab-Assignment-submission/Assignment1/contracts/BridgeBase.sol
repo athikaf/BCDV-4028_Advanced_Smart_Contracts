@@ -6,7 +6,7 @@ import './Itoken.sol';
 
 contract BridgeBase {
   address public admin;
-  IToken public token;
+  Itoken public token;
   uint public nonce;
   mapping(uint => bool) public processedNonces;
 
@@ -22,7 +22,7 @@ contract BridgeBase {
 
   constructor(address _token) {
     admin = msg.sender;
-    token = IToken(_token);
+    token = Itoken(_token);
   }
 
   function burn(address to, uint amount) external {
